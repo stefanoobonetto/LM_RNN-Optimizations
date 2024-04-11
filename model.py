@@ -12,6 +12,7 @@ class LM_LSTM(nn.Module):
         self.embedding = nn.Embedding(output_size, emb_size, padding_idx=pad_index)
         self.lstm = nn.LSTM(emb_size, hidden_size, n_layers, bidirectional=False, batch_first=True)
         self.output = nn.Linear(hidden_size, output_size)
+        self.output.weight = self.embedding.weight  # weight tying
         self.pad_token = pad_index
     
     def forward(self, input_sequence):
@@ -28,6 +29,9 @@ class LM_LSTM_DROP(nn.Module):
         self.embedding_dropout = nn.Dropout(emb_dropout)  # dropout embedding layer
         self.lstm = nn.LSTM(emb_size, hidden_size, n_layers, bidirectional=False, batch_first=True)
         self.output = nn.Linear(hidden_size, output_size)
+
+        self.output.weight = self.embedding.weight  # weight tying
+        
         self.output_dropout = nn.Dropout(out_dropout)  # dropout output layer
 
         self.pad_token = pad_index
