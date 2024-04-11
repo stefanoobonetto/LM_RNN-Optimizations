@@ -1,0 +1,13 @@
+test_1 --> LSTM + sgd (lr = 1.5)  
+
+test_2 --> LSTM + dropout + sgd (lr = 1.5)
+
+test_3 --> LSTM + dropout + AdamW (lr = 0.001)
+
+test_4 --> LSTM + weight_tying[300x300] 
+
+test_5 --> LSTM + weight_tying[200x200] 
+
+test_6 --> LSTM + var_drop (?) + weight_tying[300x300]
+
+test_7 --> LSTM + dropout + weight_tying[200x200]

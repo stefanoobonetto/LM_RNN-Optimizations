@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import math
-from weight_drop import WeightDrop
 import numpy as np
 import config
+
+
 
 class LM_LSTM(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.1,
@@ -13,8 +14,6 @@ class LM_LSTM(nn.Module):
         super(LM_LSTM, self).__init__()
         self.embedding = nn.Embedding(output_size, emb_size, padding_idx=pad_index)
         self.lstm = nn.LSTM(emb_size, hidden_size, n_layers, bidirectional=False, batch_first=True)
-        if config.wdrop:
-            self.lstm = WeightDrop(self.lstm, ['weight_hh_l0'], dropout=config.wdrop)
         self.output = nn.Linear(hidden_size, output_size)
         self.output.weight = self.embedding.weight  # weight tying
         self.pad_token = pad_index
