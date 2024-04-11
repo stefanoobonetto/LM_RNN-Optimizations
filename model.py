@@ -14,7 +14,7 @@ class LM_LSTM(nn.Module):
         self.embedding = nn.Embedding(output_size, emb_size, padding_idx=pad_index)
         self.lstm = nn.LSTM(emb_size, hidden_size, n_layers, bidirectional=False, batch_first=True)
         if config.wdrop:
-            self.lstm = [WeightDrop(rnn, ['weight_hh_l0'], dropout=config.wdrop) for rnn in self.rnns]
+            self.lstm = WeightDrop(self.lstm, ['weight_hh_l0'], dropout=config.wdrop)
         self.output = nn.Linear(hidden_size, output_size)
         self.output.weight = self.embedding.weight  # weight tying
         self.pad_token = pad_index
