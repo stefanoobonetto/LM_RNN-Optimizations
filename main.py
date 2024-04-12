@@ -31,12 +31,12 @@ dev_dataset = PennTreeBank(dev_raw, lang)
 test_dataset = PennTreeBank(test_raw, lang)
 
 # Dataloader instantiation
-train_loader = DataLoader(train_dataset, batch_size=64, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]),  shuffle=True)
-dev_loader = DataLoader(dev_dataset, batch_size=128, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
-test_loader = DataLoader(test_dataset, batch_size=128, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
+train_loader = DataLoader(train_dataset, batch_size=32, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]),  shuffle=True)
+dev_loader = DataLoader(dev_dataset, batch_size=64, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
+test_loader = DataLoader(test_dataset, batch_size=64, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
 if not config.adam:
-    lr = 1.5                          # SGD = 1.5, AdamW = 0.001
+    lr = 2.5                          # SGD = 2.5, AdamW = 0.001
 else:
     lr = 0.001
 
