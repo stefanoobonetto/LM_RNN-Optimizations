@@ -10,4 +10,4 @@ emb_size = 300
 n_epochs = 100
 drop = False
 adam = False
-var_drop = False
+var_drop = True

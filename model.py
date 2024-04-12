@@ -9,12 +9,6 @@ from torch.nn.utils.rnn import PackedSequence
 from typing import *
 
 class VariationalDropout(nn.Module):
-    """
-    Applies the same dropout mask across the temporal dimension
-    See https://arxiv.org/abs/1512.05287 for more details.
-    Note that this is not applied to the recurrent activations in the LSTM like the above paper.
-    Instead, it is applied to the inputs and outputs of the recurrent layer.
-    """
     def __init__(self, dropout: float, batch_first: Optional[bool]=False):
         super().__init__()
         self.dropout = dropout
