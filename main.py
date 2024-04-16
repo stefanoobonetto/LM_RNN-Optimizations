@@ -1,7 +1,7 @@
 import torch
 from model import LM_LSTM, LM_LSTM_DROP
-from utils import read_file, Lang, PennTreeBank, create_next_test_folder, save_results, get_vocab, collate_fn
-from functions import train_loop, eval_loop, init_weights
+from functions import read_file, Lang, PennTreeBank, create_next_test_folder, save_results, get_vocab, collate_fn
+from utils import train_loop, eval_loop, init_weights
 import torch.optim as optim
 import math
 from tqdm import tqdm
@@ -62,6 +62,11 @@ criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reducti
 
 create_next_test_folder("tests")
 
+L = config.n_epochs
+n = 5
+k = 0
+t = 0
+T = 0
 n_epochs = config.n_epochs
 patience = 3
 losses_train = []
@@ -70,17 +75,23 @@ sampled_epochs = []
 best_ppl = math.inf
 best_model = None
 pbar = tqdm(range(1, n_epochs))
-ppls = []
+ppls = []               # logs
 
 for epoch in pbar:
     loss = train_loop(train_loader, optimizer, criterion_train, model, clip)
-    if epoch % 1 == 0:
+    if epoch % L == 0 and T == 0:
         sampled_epochs.append(epoch)
         losses_train.append(np.asarray(loss).mean())
         ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+
         losses_dev.append(np.asarray(loss_dev).mean())
         pbar.set_description("PPL: %f" % ppl_dev)
+        
+        if t > n and ppl_dev > min(ppls[max(0, t-n-1):t]):
+            T = k
         ppls.append(ppl_dev)
+        t += 1
+
         if  ppl_dev < best_ppl:
             best_ppl = ppl_dev
             best_model = copy.deepcopy(model).to('cpu')
@@ -90,6 +101,9 @@ for epoch in pbar:
 
         if patience <= 0:
             break
+    
+    k += 1
+
 
 best_model.to(device)
 final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)

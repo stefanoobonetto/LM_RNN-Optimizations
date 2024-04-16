@@ -5,7 +5,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import math
 import numpy as np
-import config
+import config 
 from torch.nn.utils.rnn import PackedSequence
 from typing import *
 
