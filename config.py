@@ -10,4 +10,5 @@ emb_size = 300
 n_epochs = 100
 drop = False
 adam = False
+asgd = True
 var_drop = True

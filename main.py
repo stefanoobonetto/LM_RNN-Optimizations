@@ -55,7 +55,10 @@ model.apply(init_weights)
 if config.adam:
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 else:
-    optimizer = optim.SGD(model.parameters(), lr=lr)
+    if config.asgd:
+        optimizer = optim.ASGD(model.parameters(), lr=lr) 
+    else:
+        optimizer = optim.SGD(model.parameters(), lr=lr)
 
 criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
 criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')
