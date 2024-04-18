@@ -78,44 +78,71 @@ sampled_epochs = []
 best_ppl = math.inf
 best_model = None
 pbar = tqdm(range(1, n_epochs))
-ppls = []               # logs
+ppls_train = []               # logs
+ppls_dev = []               # logs
+
+# for epoch in pbar:
+#     loss = train_loop(train_loader, optimizer, criterion_train, model, clip)
+#     if epoch % L == 0 and T == 0:
+#         sampled_epochs.append(epoch)
+#         losses_train.append(np.asarray(loss).mean())
+#         ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+
+#         losses_dev.append(np.asarray(loss_dev).mean())
+#         pbar.set_description("PPL: %f" % ppl_dev)
+        
+#         if t > n and ppl_dev > min(ppls[max(0, t-n-1):t]):
+#             T = k
+#         ppls.append(ppl_dev)
+#         t += 1
+
+#         if  ppl_dev < best_ppl:
+#             best_ppl = ppl_dev
+#             best_model = copy.deepcopy(model).to('cpu')
+#             patience = 3
+#         else:
+#             patience -= 1
+
+#         if patience <= 0:
+#             break
+    
+#     k += 1
 
 for epoch in pbar:
-    loss = train_loop(train_loader, optimizer, criterion_train, model, clip)
-    if epoch % L == 0 and T == 0:
+    
+    ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
+    ppls_train.append(ppl_train)
+    losses_train.append(loss_train)
+
+    if epoch % 1 == 0:
         sampled_epochs.append(epoch)
-        losses_train.append(np.asarray(loss).mean())
+        losses_train.append(np.asarray(loss_train).mean())
         ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+        ppls_dev.append(ppl_dev)
+        losses_dev.append(loss_dev)
 
         losses_dev.append(np.asarray(loss_dev).mean())
         pbar.set_description("PPL: %f" % ppl_dev)
         
-        if t > n and ppl_dev > min(ppls[max(0, t-n-1):t]):
-            T = k
-        ppls.append(ppl_dev)
-        t += 1
-
-        if  ppl_dev < best_ppl:
+        if  ppl_dev < best_ppl: # the lower, the better
             best_ppl = ppl_dev
             best_model = copy.deepcopy(model).to('cpu')
             patience = 3
         else:
             patience -= 1
 
-        if patience <= 0:
-            break
-    
-    k += 1
+        if patience <= 0: # Early stopping with patience
+            break # Not nice but it keeps the code clean
 
 
 best_model.to(device)
 final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)
 
-ppls.append(final_ppl)
+# ppls.append(final_ppl)
 
 print('Test ppl: ', final_ppl)
 
-save_results(ppls, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train)
+save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train)
 
 print("TEST " + str(dir) + ":")
 # print(ppls)

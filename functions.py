@@ -142,25 +142,19 @@ def create_next_test_folder(base_dir):
     dir = next_folder
     print(f"Created folder: {next_folder}")
 
-def plot_line_graph(data, sampled_epochs, losses_dev, losses_train, filename, filename1):
+def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, filename, filename1):
     x = list(range(1, len(data) + 1))  # Indici incrementati di 1
-    y = data  # Valori della lista
+    y1 = data1  # Valori della lista
+    y2 = data2  # Valori della lista
 
-    plt.plot(x, y)
+    plt.plot(x, y1, label='PPL valuation')
+    plt.plot(x, y2, label='PPL training')
     plt.xlabel('Epochs')
     plt.ylabel('PPL')
     plt.title('PPLs for each epoch')
     plt.grid(True)
-    plt.savefig(filename)
-    plt.close()
-
-    plt.plot(sampled_epochs, losses_train, label='Training Loss')
-    plt.plot(sampled_epochs, losses_dev, label='Validation Loss')
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
     plt.legend()
-    plt.grid(True)
-    plt.savefig(filename1)
+    plt.savefig(filename)
     plt.close()
 
 def save_to_csv(data, filename):
@@ -170,15 +164,16 @@ def save_to_csv(data, filename):
         for idx, value in enumerate(data):
             writer.writerow([idx + 1, value])
 
-def save_results(ppls, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train):
+def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train):
     test = "[LSTM_"
     if config.drop:
         test += "drop_"
     if config.adam:
         test += "adam_"
     test += str(lr_initial) + "_" + str(lr) + "_" + str(epoch) + "]"
-    plot_line_graph(ppls, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
-    save_to_csv(ppls, os.path.join(dir, "ppls_" + test + ".csv"))
+    plot_line_graph(ppls_dev, ppls_train, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
+    save_to_csv(ppls_dev, os.path.join(dir, "ppls_dev_" + test + ".csv"))
+    save_to_csv(ppls_train, os.path.join(dir, "ppls_train_" + test + ".csv"))
     save_to_csv(losses_dev, os.path.join(dir, "val_loss_" + test + ".csv"))
     save_to_csv(losses_train, os.path.join(dir, "train_loss_" + test + ".csv"))
 
