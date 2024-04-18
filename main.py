@@ -15,7 +15,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
-DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
 
 train_raw = read_file("dataset/PennTreeBank/ptb.train.txt")
 dev_raw = read_file("dataset/PennTreeBank/ptb.valid.txt")
@@ -138,18 +137,13 @@ for epoch in pbar:
 best_model.to(device)
 final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)
 
-# ppls.append(final_ppl)
+ppls_dev.append(final_ppl)
+ppls_train.append(final_ppl)
 
 print('Test ppl: ', final_ppl)
 
 save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train)
 
 print("TEST " + str(dir) + ":")
-# print(ppls)
-print(final_ppl)
 
-# print("Learning Rate: " + str(lr))
-# plt.xlabel("Epoch")
-# plt.ylabel("PPL")
-# plt.grid()
-# plt.plot(ppls)
+print(final_ppl)

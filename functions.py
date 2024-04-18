@@ -9,7 +9,6 @@ import csv
 import os
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
-DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
 
 def read_file(path, eos_token="<eos>"):
     output = []
@@ -117,8 +116,8 @@ def collate_fn(data, pad_token):
     source, _ = merge(new_item["source"])
     target, lengths = merge(new_item["target"])
 
-    new_item["source"] = source.to(DEVICE)
-    new_item["target"] = target.to(DEVICE)
+    new_item["source"] = source.to(device)
+    new_item["target"] = target.to(device)
     new_item["number_tokens"] = sum(lengths)
     return new_item
 
@@ -143,12 +142,16 @@ def create_next_test_folder(base_dir):
     print(f"Created folder: {next_folder}")
 
 def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, filename, filename1):
-    x = list(range(1, len(data) + 1))  # Indici incrementati di 1
-    y1 = data1  # Valori della lista
-    y2 = data2  # Valori della lista
 
-    plt.plot(x, y1, label='PPL valuation')
-    plt.plot(x, y2, label='PPL training')
+    y1 = data1[:-1]  # l'ultimo valore è il best_ppl, non voglio plottarlo 
+    y2 = data2[:-1]  
+    
+    x1 = list(range(1, len(y1) + 1))  # Indici incrementati di 1
+    x2 = list(range(1, len(y2) + 1))  # Indici incrementati di 1
+    
+
+    plt.plot(x1, y1, label='PPL valuation')
+    plt.plot(x2, y2, label='PPL training')
     plt.xlabel('Epochs')
     plt.ylabel('PPL')
     plt.title('PPLs for each epoch')

@@ -12,8 +12,8 @@ test_6 --> LSTM + var_drop (?) + weight_tying[300x300]
 
 test_7 --> LSTM + dropout + weight_tying[200x200]
 
-test_8 --> LSTM + var_drop + weight_tying[300x300]
+test_8 --> LSTM + dropout + weight_tying[300x300]
 
-
+test_9 --> LSTM + weight_tying[300x300] + var_drop 
 
 

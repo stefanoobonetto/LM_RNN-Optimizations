@@ -18,7 +18,9 @@ def train_loop(data, optimizer, criterion, model, clip=5):
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step() # Update the weights
 
-    return sum(loss_array)/sum(number_of_tokens)
+    ppl = math.exp(sum(loss_array) / sum(number_of_tokens))
+
+    return ppl, sum(loss_array)/sum(number_of_tokens)
 
 def eval_loop(data, eval_criterion, model):
     model.eval()
