@@ -13,14 +13,15 @@ from typing import *
 class VariationalDropout(nn.Module):
     def __init__(self):
         super().__init__()
-
-    def forward(self, x, dropout=0.5):
+        self.mask = None
+        
+    def forward(self, input, dropout=0.5):
         if not self.training or not dropout:
-            return x
-        m = x.data.new(1, x.size(1), x.size(2)).bernoulli_(1 - dropout)
-        mask = torch.tensor(m, requires_grad=False) / (1 - dropout)
-        mask = mask.expand_as(x)
-        return mask * x
+            return input
+        if self.mask is None or self.mask.size() != input.size():
+            m = torch.empty(input.size(), device=input.device).bernoulli_(1-dropout)
+            self.mask = m/(1-dropout)
+        return self.mask * input
 
 # Define LM_LSTM class
 class LM_LSTM(nn.Module):
