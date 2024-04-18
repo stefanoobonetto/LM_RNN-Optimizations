@@ -45,7 +45,8 @@ class LM_LSTM(nn.Module):
             self.output_drop = VariationalDropout()
         
         # Tie the weights of the output and embedding layers
-        self.output.weight = self.embedding.weight
+        if config.weight_tying:
+            self.output.weight = self.embedding.weight
         self.pad_token = pad_index
     
     def forward(self, input_sequence):
