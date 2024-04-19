@@ -64,7 +64,7 @@ criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reducti
 
 create_next_test_folder("tests")
 
-L = config.n_epochs
+L = 5     # config.n_epochs
 n = 5
 k = 0
 t = 0
@@ -80,58 +80,62 @@ pbar = tqdm(range(1, n_epochs))
 ppls_train = []               # logs
 ppls_dev = []               # logs
 
-# for epoch in pbar:
-#     loss = train_loop(train_loader, optimizer, criterion_train, model, clip)
-#     if epoch % L == 0 and T == 0:
-#         sampled_epochs.append(epoch)
-#         losses_train.append(np.asarray(loss).mean())
-#         ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+if config.asgd:
+    for epoch in pbar:
+        ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
+        ppls_train.append(ppl_train)
+        losses_train.append(loss_train)
 
-#         losses_dev.append(np.asarray(loss_dev).mean())
-#         pbar.set_description("PPL: %f" % ppl_dev)
+        if epoch % L == 0 and T == 0:
+            sampled_epochs.append(epoch)
+            # losses_train.append(np.asarray(loss_train).mean())
+            ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+
+            losses_dev.append(np.asarray(loss_dev).mean())
+            pbar.set_description("PPL: %f" % ppl_dev)
+            
+            if t > n and ppl_dev > min(ppl_dev[max(0, t-n-1):t]):
+                T = k
+            ppls_dev.append(ppl_dev)
+            t += 1
+
+            if  ppl_dev < best_ppl:
+                best_ppl = ppl_dev
+                best_model = copy.deepcopy(model).to('cpu')
+                patience = 3
+            else:
+                patience -= 1
+
+            if patience <= 0:
+                break
         
-#         if t > n and ppl_dev > min(ppls[max(0, t-n-1):t]):
-#             T = k
-#         ppls.append(ppl_dev)
-#         t += 1
-
-#         if  ppl_dev < best_ppl:
-#             best_ppl = ppl_dev
-#             best_model = copy.deepcopy(model).to('cpu')
-#             patience = 3
-#         else:
-#             patience -= 1
-
-#         if patience <= 0:
-#             break
-    
-#     k += 1
-
-for epoch in pbar:
-    
-    ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
-    ppls_train.append(ppl_train)
-    losses_train.append(loss_train)
-
-    if epoch % 1 == 0:
-        sampled_epochs.append(epoch)
-        losses_train.append(np.asarray(loss_train).mean())
-        ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
-        ppls_dev.append(ppl_dev)
-        losses_dev.append(loss_dev)
-
-        losses_dev.append(np.asarray(loss_dev).mean())
-        pbar.set_description("PPL: %f" % ppl_dev)
+        k += 1
+else:
+    for epoch in pbar:
         
-        if  ppl_dev < best_ppl: # the lower, the better
-            best_ppl = ppl_dev
-            best_model = copy.deepcopy(model).to('cpu')
-            patience = 3
-        else:
-            patience -= 1
+        ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
+        ppls_train.append(ppl_train)
+        losses_train.append(loss_train)
 
-        if patience <= 0: # Early stopping with patience
-            break # Not nice but it keeps the code clean
+        if epoch % 1 == 0:
+            sampled_epochs.append(epoch)
+            losses_train.append(np.asarray(loss_train).mean())
+            ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+            ppls_dev.append(ppl_dev)
+            losses_dev.append(loss_dev)
+
+            losses_dev.append(np.asarray(loss_dev).mean())
+            pbar.set_description("PPL: %f" % ppl_dev)
+            
+            if  ppl_dev < best_ppl: # the lower, the better
+                best_ppl = ppl_dev
+                best_model = copy.deepcopy(model).to('cpu')
+                patience = 3
+            else:
+                patience -= 1
+
+            if patience <= 0: # Early stopping with patience
+                break # Not nice but it keeps the code clean
 
 
 best_model.to(device)
