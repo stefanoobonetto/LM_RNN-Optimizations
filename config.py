@@ -8,7 +8,10 @@ global hid_size
 hid_size = 300
 emb_size = 300
 n_epochs = 100
+nonmono = 5             # n var in the paper
+
 drop = False
+sgd = True
 adam = False
 asgd = False
 weight_tying = True

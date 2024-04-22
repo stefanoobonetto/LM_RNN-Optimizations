@@ -11,6 +11,7 @@ import copy
 import config
 from functools import partial
 import os
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -53,22 +54,14 @@ model.apply(init_weights)
 
 if config.adam:
     optimizer = optim.AdamW(model.parameters(), lr=lr)
-else:
-    if config.asgd:
-        optimizer = optim.ASGD(model.parameters(), lr=lr) 
-    else:
-        optimizer = optim.SGD(model.parameters(), lr=lr)
+elif config.sgd:
+    optimizer = optim.SGD(model.parameters(), lr=lr)
 
 criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
 criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')
 
 create_next_test_folder("tests")
 
-L = 5     # config.n_epochs
-n = 5
-k = 0
-t = 0
-T = 0
 n_epochs = config.n_epochs
 patience = 3
 losses_train = []
@@ -79,45 +72,37 @@ best_model = None
 pbar = tqdm(range(1, n_epochs))
 ppls_train = []               # logs
 ppls_dev = []               # logs
+best_loss_dev = []
 
-if config.asgd:
-    for epoch in pbar:
-        ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
-        ppls_train.append(ppl_train)
-        losses_train.append(loss_train)
+for epoch in pbar:
+    epoch_start_time = time.time()
+    ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
+    ppls_train.append(ppl_train)
+    losses_train.append(loss_train)
 
-        if epoch % L == 0 and T == 0:
-            sampled_epochs.append(epoch)
-            # losses_train.append(np.asarray(loss_train).mean())
-            ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
+    if epoch % 1 == 0:
+        if 't0' in optimizer.param_groups[0]:
+            tmp = {}
+            for prm in model.parameters():
+                tmp[prm] = prm.data.clone()
+                prm.data = optimizer.state[prm]['ax'].clone()
 
-            losses_dev.append(np.asarray(loss_dev).mean())
-            pbar.set_description("PPL: %f" % ppl_dev)
-            
-            if t > n and ppl_dev > min(ppl_dev[max(0, t-n-1):t]):
-                T = k
-            ppls_dev.append(ppl_dev)
-            t += 1
+            loss_dev2 = eval_loop(dev_loader, criterion_eval, model)[1]
+            print('-' * 89)
+            print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
+                'valid ppl {:8.2f} | valid bpc {:8.3f}'.format(
+                    epoch, (time.time() - epoch_start_time), loss_dev2, math.exp(loss_dev2), loss_dev2 / math.log(2)))
+            print('-' * 89)
 
-            if  ppl_dev < best_ppl:
-                best_ppl = ppl_dev
-                best_model = copy.deepcopy(model).to('cpu')
-                patience = 3
-            else:
-                patience -= 1
+            if loss_dev2 < stored_loss:
+                # model_save(args.save)
+                print('Saving Averaged!')
+                stored_loss = loss_dev2
 
-            if patience <= 0:
-                break
-        
-        k += 1
-else:
-    for epoch in pbar:
-        
-        ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
-        ppls_train.append(ppl_train)
-        losses_train.append(loss_train)
+            for prm in model.parameters():
+                prm.data = tmp[prm].clone()
 
-        if epoch % 1 == 0:
+        else:
             sampled_epochs.append(epoch)
             losses_train.append(np.asarray(loss_train).mean())
             ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
@@ -126,7 +111,11 @@ else:
 
             losses_dev.append(np.asarray(loss_dev).mean())
             pbar.set_description("PPL: %f" % ppl_dev)
-            
+
+            if config.sgd and 't0' not in optimizer.param_groups[0]  and (len(best_loss_dev)>config.nonmono and loss_dev > min(best_loss_dev[:-config.nonmono])):
+                print('Switching to ASGD')
+                optimizer = torch.optim.ASGD(model.parameters(), lr=lr_initial, t0=0, lambd=0.)
+
             if  ppl_dev < best_ppl: # the lower, the better
                 best_ppl = ppl_dev
                 best_model = copy.deepcopy(model).to('cpu')
@@ -136,6 +125,8 @@ else:
 
             if patience <= 0: # Early stopping with patience
                 break # Not nice but it keeps the code clean
+
+            best_loss_dev.append(loss_dev)
 
 
 best_model.to(device)
