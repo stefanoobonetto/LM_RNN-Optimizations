@@ -160,6 +160,23 @@ def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, file
     plt.savefig(filename)
     plt.close()
 
+    y1 = losses_dev  # l'ultimo valore è il best_ppl, non voglio plottarlo 
+    y2 = losses_train
+
+    x1 = list(range(1, len(y1) + 1))  # Indici incrementati di 1
+    x2 = list(range(1, len(y2) + 1))  # Indici incrementati di 1
+    
+
+    plt.plot(x1, y1, label='Validation Loss')
+    plt.plot(x2, y2, label='Training Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Losses for each epoch')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(filename1)
+    plt.close()
+
 def save_to_csv(data, filename):
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -177,6 +194,8 @@ def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, l
     plot_line_graph(ppls_dev, ppls_train, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
     save_to_csv(ppls_dev, os.path.join(dir, "ppls_dev_" + test + ".csv"))
     save_to_csv(ppls_train, os.path.join(dir, "ppls_train_" + test + ".csv"))
+
+    plot_line_graph(losses_dev, losses_train, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
     save_to_csv(losses_dev, os.path.join(dir, "val_loss_" + test + ".csv"))
     save_to_csv(losses_train, os.path.join(dir, "train_loss_" + test + ".csv"))
 

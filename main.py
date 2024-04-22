@@ -31,9 +31,9 @@ dev_dataset = PennTreeBank(dev_raw, lang)
 test_dataset = PennTreeBank(test_raw, lang)
 
 # Dataloader instantiation
-train_loader = DataLoader(train_dataset, batch_size=32, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]),  shuffle=True)
-dev_loader = DataLoader(dev_dataset, batch_size=64, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
-test_loader = DataLoader(test_dataset, batch_size=64, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
+train_loader = DataLoader(train_dataset, batch_size=config.train_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]),  shuffle=True)
+dev_loader = DataLoader(dev_dataset, batch_size=config.dev_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
+test_loader = DataLoader(test_dataset, batch_size=config.test_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
 if not config.adam:
     lr = 2.5                          # SGD = 2.5, AdamW = 0.001
@@ -73,46 +73,46 @@ pbar = tqdm(range(1, n_epochs))
 ppls_train = []               # logs
 ppls_dev = []               # logs
 best_loss_dev = []
+stored_loss = 100000000
 
 for epoch in pbar:
     epoch_start_time = time.time()
     ppl_train, loss_train = train_loop(train_loader, optimizer, criterion_train, model, clip)
     ppls_train.append(ppl_train)
     losses_train.append(loss_train)
-
+    sampled_epochs.append(epoch)
+    losses_train.append(np.asarray(loss_train).mean())
+    
     if epoch % 1 == 0:
-        if 't0' in optimizer.param_groups[0]:
+        if 't0' in optimizer.param_groups[0] and config.asgd:
             tmp = {}
             for prm in model.parameters():
                 tmp[prm] = prm.data.clone()
                 prm.data = optimizer.state[prm]['ax'].clone()
 
-            loss_dev2 = eval_loop(dev_loader, criterion_eval, model)[1]
-            print('-' * 89)
-            print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                'valid ppl {:8.2f} | valid bpc {:8.3f}'.format(
-                    epoch, (time.time() - epoch_start_time), loss_dev2, math.exp(loss_dev2), loss_dev2 / math.log(2)))
-            print('-' * 89)
+            ppl_dev, loss_dev2 = eval_loop(dev_loader, criterion_eval, model)
 
-            if loss_dev2 < stored_loss:
+            print("Playing with AvSGD")
+
+            # print('-' * 89)
+            # print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
+            #     'valid ppl {:8.2f} | valid bpc {:8.3f}'.format(
+            #         epoch, (time.time() - epoch_start_time), loss_dev2, math.exp(loss_dev2), loss_dev2 / math.log(2)))
+            # print('-' * 89)
+
+            # if loss_dev2 < stored_loss:
                 # model_save(args.save)
-                print('Saving Averaged!')
-                stored_loss = loss_dev2
+                # print('Saving Averaged!')
+                # stored_loss = loss_dev2
 
             for prm in model.parameters():
                 prm.data = tmp[prm].clone()
-
         else:
-            sampled_epochs.append(epoch)
-            losses_train.append(np.asarray(loss_train).mean())
             ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
-            ppls_dev.append(ppl_dev)
-            losses_dev.append(loss_dev)
 
-            losses_dev.append(np.asarray(loss_dev).mean())
-            pbar.set_description("PPL: %f" % ppl_dev)
+            print("Playing with normal SGD")
 
-            if config.sgd and 't0' not in optimizer.param_groups[0]  and (len(best_loss_dev)>config.nonmono and loss_dev > min(best_loss_dev[:-config.nonmono])):
+            if config.asgd and config.sgd and 't0' not in optimizer.param_groups[0]  and (len(best_loss_dev)>config.nonmono and loss_dev > min(best_loss_dev[:-config.nonmono])):
                 print('Switching to ASGD')
                 optimizer = torch.optim.ASGD(model.parameters(), lr=lr_initial, t0=0, lambd=0.)
 
@@ -127,6 +127,12 @@ for epoch in pbar:
                 break # Not nice but it keeps the code clean
 
             best_loss_dev.append(loss_dev)
+        
+        ppls_dev.append(ppl_dev)
+        losses_dev.append(loss_dev)
+        losses_dev.append(np.asarray(loss_dev).mean())
+        
+        pbar.set_description("PPL: %f" % ppl_dev)
 
 
 best_model.to(device)
@@ -135,7 +141,7 @@ final_ppl,  _ = eval_loop(test_loader, criterion_eval, best_model)
 ppls_dev.append(final_ppl)
 ppls_train.append(final_ppl)
 
-print('Test ppl: ', final_ppl)
+print('Best ppl: ', final_ppl)
 
 save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train)
 
