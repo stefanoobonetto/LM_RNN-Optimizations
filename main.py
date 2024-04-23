@@ -36,7 +36,7 @@ dev_loader = DataLoader(dev_dataset, batch_size=config.dev_batch_size, collate_f
 test_loader = DataLoader(test_dataset, batch_size=config.test_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
 if not config.adam:
-    lr = 2.5                          # SGD = 2.5, AdamW = 0.001
+    lr = config.sgd_lr                          # SGD = 2.5, AdamW = 0.001
 else:
     lr = 0.001
 
@@ -110,29 +110,29 @@ for epoch in pbar:
         else:
             ppl_dev, loss_dev = eval_loop(dev_loader, criterion_eval, model)
 
-            print("Playing with normal SGD")
+            string = "Playing with normal SGD"
 
             if config.asgd and config.sgd and 't0' not in optimizer.param_groups[0]  and (len(best_loss_dev)>config.nonmono and loss_dev > min(best_loss_dev[:-config.nonmono])):
-                print('Switching to ASGD')
+                string = 'Switching to ASGD'
                 optimizer = torch.optim.ASGD(model.parameters(), lr=lr_initial, t0=0, lambd=0.)
 
-            if  ppl_dev < best_ppl: # the lower, the better
+        if  ppl_dev < best_ppl: # the lower, the better
                 best_ppl = ppl_dev
                 best_model = copy.deepcopy(model).to('cpu')
                 patience = 3
-            else:
-                patience -= 1
+        else:
+            patience -= 1
 
-            if patience <= 0: # Early stopping with patience
-                break # Not nice but it keeps the code clean
+        if patience <= 0: # Early stopping with patience
+            break # Not nice but it keeps the code clean
 
-            best_loss_dev.append(loss_dev)
+        best_loss_dev.append(loss_dev)
         
         ppls_dev.append(ppl_dev)
         losses_dev.append(loss_dev)
         losses_dev.append(np.asarray(loss_dev).mean())
         
-        pbar.set_description("PPL: %f" % ppl_dev)
+        pbar.set_description(string + " - PPL: %f" % ppl_dev)
 
 
 best_model.to(device)

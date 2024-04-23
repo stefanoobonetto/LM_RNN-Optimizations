@@ -5,10 +5,12 @@ global emb_size
 global hid_size
 
 # wdrop = 0.5
-hid_size = 300
-emb_size = 300
+hid_size = 600
+emb_size = 600
 n_epochs = 100
 nonmono = 3             # n var in the paper
+
+sgd_lr = 5
 
 drop = False
 sgd = True
