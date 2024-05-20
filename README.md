@@ -1,7 +1,7 @@
-# Multi-Task Learning with BERT for Intent Classification and Slot Filling
+# Enhanced LM_RNN: Techniques and Hyperparameter Optimization for Improved Performance
 
-This repository contains code implementations for multi-task learning using BERT-based models for intent classification and slot filling tasks. 
+This project explores enhancements to the LM_RNN architecture to improve performance in NLP tasks, focusing on reducing perplexity. 
 
-The code includes modifications to baseline architectures, such as adding bidirectionality and dropout layers, as well as fine-tuning pre-trained BERT models on the ATIS dataset. 
+In Part 1, modifications including replacing the RNN with an LSTM network, adding dropout layers, and switching to the AdamW optimizer are implemented incrementally. For each experiment, perplexity is evaluated, with the goal of achieving values below 250. 
 
-The aim is to achieve high accuracy for intent classification and F1 score with conll for slot filling, while addressing challenges such as sub-tokenization. The repository provides a comprehensive solution for natural language understanding tasks in the context of conversational AI systems.
+In Part 2, additional techniques such as weight tying, variational dropout, and non-monotonically triggered AvSGD are applied to further optimize the model's performance while ensuring perplexity remains below 250 and lower than the base LSTM model achieved in Part 1.
