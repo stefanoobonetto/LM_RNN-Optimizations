@@ -8,14 +8,29 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import copy
-import config
 from functools import partial
 import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
+device = 'cuda' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
+print(device)
+
+HID_SIZE = 300
+EMB_SIZE = 300
+N_EPOCHS = 100
+
+SGD_LR = 1.5
+
+DROP = True
+SGD = True
+ADAM = False
+
+TRAIN_BATCH_SIZE = 32
+DEV_BATCH_SIZE = 64 
+TEST_BATCH_SIZE = 64
+
 
 train_raw = read_file("dataset/PennTreeBank/ptb.train.txt")
 dev_raw = read_file("dataset/PennTreeBank/ptb.valid.txt")
@@ -29,12 +44,12 @@ train_dataset = PennTreeBank(train_raw, lang)
 dev_dataset = PennTreeBank(dev_raw, lang)
 test_dataset = PennTreeBank(test_raw, lang)
 
-train_loader = DataLoader(train_dataset, batch_size=config.train_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]),  shuffle=True)
-dev_loader = DataLoader(dev_dataset, batch_size=config.dev_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
-test_loader = DataLoader(test_dataset, batch_size=config.test_batch_size, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
+train_loader = DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]),  shuffle=True)
+dev_loader = DataLoader(dev_dataset, batch_size=DEV_BATCH_SIZE, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
+test_loader = DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, collate_fn=partial(collate_fn, pad_token=lang.word2id["<pad>"]))
 
-if not config.adam:
-    lr = config.sgd_lr                          # SGD = 2.5, AdamW = 0.001
+if not ADAM:
+    lr = SGD_LR                          # SGD = 2.5, ADAMW = 0.001
 else:
     lr = 0.001
 
@@ -43,16 +58,16 @@ clip = 5
 
 vocab_len = len(lang.word2id)
 
-if config.drop:
-    model = LM_LSTM_DROP(config.emb_size, config.hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+if DROP:
+    model = LM_LSTM_DROP(EMB_SIZE, HID_SIZE, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
 else:
-    model = LM_LSTM(config.emb_size, config.hid_size, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
+    model = LM_LSTM(EMB_SIZE, HID_SIZE, vocab_len, pad_index=lang.word2id["<pad>"]).to(device)
 
 model.apply(init_weights)
 
-if config.adam:
+if ADAM:
     optimizer = optim.AdamW(model.parameters(), lr=lr)
-elif config.sgd:
+elif SGD:
     optimizer = optim.SGD(model.parameters(), lr=lr)
 
 criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
@@ -60,14 +75,14 @@ criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reducti
 
 create_next_test_folder("tests")
 
-n_epochs = config.n_epochs
+N_EPOCHS = N_EPOCHS
 patience = 3
 losses_train = []
 losses_dev = []
 sampled_epochs = []
 best_ppl = math.inf
 best_model = None
-pbar = tqdm(range(1, n_epochs))
+pbar = tqdm(range(1, N_EPOCHS))
 ppls_train = []               # logs
 ppls_dev = []               # logs
 best_loss_dev = []
@@ -114,7 +129,7 @@ ppls_train.append(final_ppl)
 
 print('Best ppl: ', final_ppl)
 
-save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train)
+save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train, DROP, ADAM)
 
 print("TEST " + str(dir) + ":")
 

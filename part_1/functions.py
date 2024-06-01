@@ -126,11 +126,11 @@ def save_to_csv(data, filename):
         for idx, value in enumerate(data):
             writer.writerow([idx + 1, value])
 
-def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train):
+def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train, drop, adam):
     test = "[LSTM_"
-    if config.drop:
+    if drop:
         test += "drop_"
-    if config.adam:
+    if adam:
         test += "adam_"
     test += str(lr_initial) + "_" + str(lr) + "_" + str(epoch) + "]"
     plot_line_graph(ppls_dev, ppls_train, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
@@ -141,6 +141,6 @@ def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, l
     save_to_csv(losses_dev, os.path.join(dir, "val_loss_" + test + ".csv"))
     save_to_csv(losses_train, os.path.join(dir, "train_loss_" + test + ".csv"))
 
-    print("Experiment stopped at epoch: ", epoch, " with lr: ", lr, " and initial lr: ", lr_initial, "[drop: ", config.drop, ", adam: ", config.adam, "]")
+    print("Experiment stopped at epoch: ", epoch, " with lr: ", lr, " and initial lr: ", lr_initial, "[drop: ", drop, ", adam: ", adam, "]")
 
 

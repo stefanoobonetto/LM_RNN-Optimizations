@@ -12,7 +12,9 @@ import time
 import numpy as np
 from model import LM_LSTM
 
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
+device = 'cuda' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
+
+print(device)
 
 HID_SIZE = 600
 EMB_SIZE = 600
@@ -83,7 +85,6 @@ pbar = tqdm(range(1, N_EPOCHS))
 ppls_train = []               # logs
 ppls_dev = []               # logs
 best_loss_dev = []
-stored_loss = 100000000
 
 for epoch in pbar:
     epoch_start_time = time.time()
