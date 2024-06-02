@@ -99,7 +99,7 @@ for epoch in pbar:
             tmp = {}
             for prm in model.parameters():
                 tmp[prm] = prm.data.clone()
-                prm.data = optimizer.state[prm]['ax'].clone()
+                prm.data = optimizer.state[prm]['ax'].clone()           # The parameter values are replaced with their averaged counterparts from the optimizer’s state dictionary
 
             ppl_dev, loss_dev2 = eval_loop(dev_loader, criterion_eval, model)
 
@@ -112,7 +112,11 @@ for epoch in pbar:
 
             string = "[SGD]"
 
-            if ASGD and SGD and 't0' not in optimizer.param_groups[0]  and (len(best_loss_dev)>NONMONO and loss_dev > min(best_loss_dev[:-NONMONO])):
+            if ASGD and SGD and 't0' not in optimizer.param_groups[0]  and (len(best_loss_dev) > NONMONO and loss_dev > min(best_loss_dev[:-NONMONO])):
+                
+                # We switch to ASGD if the development loss has not improved over a defined number of epochs and if the loss of the current epoch is 
+                # higher than the minimum loss from a specific number of previous epochs
+                
                 string = 'Switching to ASGD'
                 optimizer = torch.optim.ASGD(model.parameters(), lr=lr_initial, t0=0, lambd=0.)
 
