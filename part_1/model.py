@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import *
 
-# Define LM_LSTM class
+# vanilla LSTM model
 class LM_LSTM(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.1,
                  emb_dropout=0.1, n_layers=1, batch_first=True):
@@ -25,7 +25,8 @@ class LM_LSTM(nn.Module):
         output = self.output(lstm_out).permute(0, 2, 1)
         return output
 
-# Define LM_LSTM_DROP class
+
+# LSTM + dropout layers model
 class LM_LSTM_DROP(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size, pad_index=0, out_dropout=0.1,
                  emb_dropout=0.1, n_layers=1):

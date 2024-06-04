@@ -1,11 +1,7 @@
 import torch
-import config
+import torch
 import torch.utils.data as data
-import matplotlib.pyplot as plt
-import torch.optim as optim
-from tqdm import tqdm
-import copy
-import csv
+from matplotlib import pyplot as plt
 import os
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu' # it can be changed with 'cpu' if you do not have a gpu
@@ -122,7 +118,14 @@ def collate_fn(data, pad_token):
     return new_item
 
 def create_next_test_folder(base_dir):
-    global n, dir  # Declare as global to update the global variables
+    global n, dir  
+
+    if os.path.exists(base_dir):
+        print("Folder exists:", base_dir)
+    else:
+        os.makedirs(base_dir)
+        print("Created folder:", base_dir)
+
     existing_folders = [name for name in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, name))]
 
     last_number = 0
@@ -143,11 +146,11 @@ def create_next_test_folder(base_dir):
 
 def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, filename, filename1):
 
-    y1 = data1[:-1]  # l'ultimo valore è il best_ppl, non voglio plottarlo 
+    y1 = data1[:-1]  # last val is best_ppl, don't want to plot it 
     y2 = data2[:-1]  
     
-    x1 = list(range(1, len(y1) + 1))  # Indici incrementati di 1
-    x2 = list(range(1, len(y2) + 1))  # Indici incrementati di 1
+    x1 = list(range(1, len(y1) + 1))  # indx + 1
+    x2 = list(range(1, len(y2) + 1))  # indx + 1
     
 
     plt.plot(x1, y1, label='PPL valuation')
@@ -160,11 +163,11 @@ def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, file
     plt.savefig(filename)
     plt.close()
 
-    y1 = losses_dev  # l'ultimo valore è il best_ppl, non voglio plottarlo 
+    y1 = losses_dev  # last val is best_ppl, don't want to plot it 
     y2 = losses_train
 
-    x1 = list(range(1, len(y1) + 1))  # Indici incrementati di 1
-    x2 = list(range(1, len(y2) + 1))  # Indici incrementati di 1
+    x1 = list(range(1, len(y1) + 1))  # indx + 1
+    x2 = list(range(1, len(y2) + 1))  # indx + 1
     
 
     plt.plot(x1, y1, label='Validation Loss')
@@ -180,17 +183,17 @@ def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, file
 def save_to_csv(data, filename):
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Index', 'PPL'])  # Scrivi l'intestazione delle colonne
+        writer.writerow(['Index', 'PPL'])  
         for idx, value in enumerate(data):
             writer.writerow([idx + 1, value])
 
-def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train):
+def save_results(ppls_dev, ppls_train, lr, epoch,  sampled_epochs, losses_dev, losses_train, drop, adam):
     test = "[LSTM_"
-    if config.drop:
+    if drop:
         test += "drop_"
-    if config.adam:
+    if adam:
         test += "adam_"
-    test += str(lr_initial) + "_" + str(lr) + "_" + str(epoch) + "]"
+    test += str(lr) + "_" + str(epoch) + "]"
     plot_line_graph(ppls_dev, ppls_train, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
     save_to_csv(ppls_dev, os.path.join(dir, "ppls_dev_" + test + ".csv"))
     save_to_csv(ppls_train, os.path.join(dir, "ppls_train_" + test + ".csv"))
@@ -199,6 +202,6 @@ def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, l
     save_to_csv(losses_dev, os.path.join(dir, "val_loss_" + test + ".csv"))
     save_to_csv(losses_train, os.path.join(dir, "train_loss_" + test + ".csv"))
 
-    print("Experiment stopped at epoch: ", epoch, " with lr: ", lr, " and initial lr: ", lr_initial, "[drop: ", config.drop, ", adam: ", config.adam, "]")
+    print("Experiment stopped at epoch: ", epoch, " with lr: ", lr, "[drop: ", drop, ", adam: ", adam, "]")
 
 

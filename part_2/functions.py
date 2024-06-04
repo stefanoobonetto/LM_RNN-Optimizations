@@ -11,36 +11,36 @@ def train_loop(data, optimizer, criterion, model, clip=5):
     number_of_tokens = []
 
     for sample in data:
-        optimizer.zero_grad() # Zeroing the gradient
+        optimizer.zero_grad() 
         output = model(sample['source'])
-        loss = criterion(output, sample['target'])
+        loss = criterion(output, sample['target'])                   # compute loss on the training set (prediction, target)
         loss_array.append(loss.item() * sample["number_tokens"])
         number_of_tokens.append(sample["number_tokens"])
-        loss.backward() # Compute the gradient, deleting the computational graph
-        # clip the gradient to avoid explosioning gradients
+        loss.backward() 
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
-        optimizer.step() # Update the weights
+        optimizer.step() 
 
+    # calculate PPL
     ppl = math.exp(sum(loss_array) / sum(number_of_tokens))
 
-    return ppl, sum(loss_array)/sum(number_of_tokens)
+    return ppl, sum(loss_array)/sum(number_of_tokens)       # return PPL and avg loss
 
 def eval_loop(data, eval_criterion, model):
     model.eval()
-    loss_to_return = []
     loss_array = []
     number_of_tokens = []
-    # softmax = nn.Softmax(dim=1) # Use Softmax if you need the actual probability
+
     with torch.no_grad(): # It used to avoid the creation of computational graph
         for sample in data:
             output = model(sample['source'])
-            loss = eval_criterion(output, sample['target'])
+            loss = eval_criterion(output, sample['target'])          # compute loss on the validation set (prediction, target) 
             loss_array.append(loss.item())
             number_of_tokens.append(sample["number_tokens"])
 
+    # calculate PPL
     ppl = math.exp(sum(loss_array) / sum(number_of_tokens))
-    loss_to_return = sum(loss_array) / sum(number_of_tokens)
-    return ppl, loss_to_return
+    
+    return ppl, sum(loss_array) / sum(number_of_tokens)     # return ppl and avg loss
 
 def init_weights(mat):
     for m in mat.modules():
@@ -62,8 +62,18 @@ def init_weights(mat):
                 if m.bias != None:
                     m.bias.data.fill_(0.01)
 
+
+# functions to save results (csv and plots)
+
 def create_next_test_folder(base_dir):
-    global n, dir  # Declare as global to update the global variables
+    global n, dir  
+    
+    if os.path.exists(base_dir):
+        print("Folder exists:", base_dir)
+    else:
+        os.makedirs(base_dir)
+        print("Created folder:", base_dir)
+
     existing_folders = [name for name in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, name))]
 
     last_number = 0
@@ -84,11 +94,11 @@ def create_next_test_folder(base_dir):
 
 def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, filename, filename1):
 
-    y1 = data1[:-1]  # l'ultimo valore è il best_ppl, non voglio plottarlo 
+    y1 = data1[:-1]  # last val is best_ppl, don't want to plot it 
     y2 = data2[:-1]  
     
-    x1 = list(range(1, len(y1) + 1))  # Indici incrementati di 1
-    x2 = list(range(1, len(y2) + 1))  # Indici incrementati di 1
+    x1 = list(range(1, len(y1) + 1))  # indx + 1
+    x2 = list(range(1, len(y2) + 1))  # indx + 1
     
 
     plt.plot(x1, y1, label='PPL valuation')
@@ -101,13 +111,12 @@ def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, file
     plt.savefig(filename)
     plt.close()
 
-    y1 = losses_dev  # l'ultimo valore è il best_ppl, non voglio plottarlo 
+    y1 = data1[:-1]  # last val is best_ppl, don't want to plot it 
     y2 = losses_train
-
-    x1 = list(range(1, len(y1) + 1))  # Indici incrementati di 1
-    x2 = list(range(1, len(y2) + 1))  # Indici incrementati di 1
     
-
+    x1 = list(range(1, len(y1) + 1))  # indx + 1
+    x2 = list(range(1, len(y2) + 1))  # indx + 1
+    
     plt.plot(x1, y1, label='Validation Loss')
     plt.plot(x2, y2, label='Training Loss')
     plt.xlabel('Epochs')
@@ -121,16 +130,12 @@ def plot_line_graph(data1, data2, sampled_epochs, losses_dev, losses_train, file
 def save_to_csv(data, filename):
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Index', 'PPL'])  # Scrivi l'intestazione delle colonne
+        writer.writerow(['Index', 'PPL'])  
         for idx, value in enumerate(data):
             writer.writerow([idx + 1, value])
 
 def save_results(ppls_dev, ppls_train, lr_initial, lr, epoch,  sampled_epochs, losses_dev, losses_train):
     test = "[LSTM_"
-    # if DROP:
-    #     test += "drop_"
-    # if config.adam:
-    #     test += "adam_"
     test += str(lr_initial) + "_" + str(epoch) + "]"
     plot_line_graph(ppls_dev, ppls_train, sampled_epochs, losses_dev, losses_train, os.path.join(dir, "ppls_" + test + ".png"), os.path.join(dir, "training_loss_" + test + ".png"))
     save_to_csv(ppls_dev, os.path.join(dir, "ppls_dev_" + test + ".csv"))
