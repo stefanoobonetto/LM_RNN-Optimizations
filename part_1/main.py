@@ -104,6 +104,8 @@ for epoch in pbar:
         if  ppl_dev < best_ppl: # the lower, the better
                 best_ppl = ppl_dev
                 best_model = copy.deepcopy(model).to('cpu')
+                # os.makedirs('bin', exist_ok=True)
+                # torch.save(best_model.state_dict(), os.path.join('bin','best_model.pt'))
                 patience = 3
         else:
             patience -= 1

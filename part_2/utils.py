@@ -43,7 +43,7 @@ class Lang():
                 if w not in output:
                     output[w] = i
                     i += 1
-        return output
+        return output                       # vocab
 
 class PennTreeBank (data.Dataset):
 
@@ -54,6 +54,8 @@ class PennTreeBank (data.Dataset):
         for sentence in corpus:
             self.source.append(sentence.split()[0:-1]) # from the first token till the second-last token
             self.target.append(sentence.split()[1:]) # from the second token till the last token
+
+                                                    # tipico nei task di language modeling --> goal: predire la parola successiva nella sequenza date le parole precedenti
 
         self.source_ids = self.mapping_seq(self.source, lang)
         self.target_ids = self.mapping_seq(self.target, lang)

@@ -60,7 +60,7 @@ if not ADAM:
 else:
     lr = ADAM_LR
 
-clip = 5
+clip = 5                    # clippa il gradiente, se diventa troppo grande (>5) lo ridimensiona a 5 
 
 vocab_len = len(lang.word2id)
 
@@ -74,7 +74,7 @@ if ADAM:
 elif SGD:
     optimizer = optim.SGD(model.parameters(), lr=lr)
 
-criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])
+criterion_train = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"])                               # -1/N \sum_{i=1}^N \sum_{c=1}^C y_{i, c} log(y'_{i, c})
 criterion_eval = nn.CrossEntropyLoss(ignore_index=lang.word2id["<pad>"], reduction='sum')
 
 
@@ -125,6 +125,8 @@ for epoch in pbar:
         if  ppl_dev < best_ppl: # the lower, the better
                 best_ppl = ppl_dev
                 best_model = copy.deepcopy(model).to('cpu')
+                # os.makedirs('bin', exist_ok=True)
+                # torch.save(best_model.state_dict(), os.path.join('bin','best_model.pt'))
                 patience = 3
         else:
             patience -= 1
